@@ -1,3 +1,45 @@
-@import 'tailwindcss';
-@plugin '@tailwindcss/forms';
-@plugin '@tailwindcss/typography';
+@import "tailwindcss";
+@import "@fontsource/space-mono";
+@import "@skeletonlabs/skeleton";
+@import "@skeletonlabs/skeleton/optional/presets";
+@import "@skeletonlabs/skeleton/themes/crimson";
+
+@source '../node_modules/@skeletonlabs/skeleton-svelte/dist';
+
+[data-theme="crimson"] {
+    --base-font-family: "Space Mono", serif;
+    --heading-font-family: "Space Mono", serif;
+    --anchor-font-family: "inherit";
+}
+
+@layer utilities {
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}
+
+dialog,
+dialog::backdrop {
+    --anim-duration: 250ms;
+    transition:
+        display var(--anim-duration) allow-discrete,
+        overlay var(--anim-duration) allow-discrete,
+        opacity var(--anim-duration);
+    opacity: 0;
+}
+/* Animate In */
+dialog[open],
+dialog[open]::backdrop {
+    opacity: 1;
+}
+/* Animate Out */
+@starting-style {
+    dialog[open],
+    dialog[open]::backdrop {
+        opacity: 0;
+    }
+}
