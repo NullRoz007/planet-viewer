@@ -10,6 +10,7 @@
     import { ImprovedNoise } from "three/examples/jsm/math/ImprovedNoise.js";
     import { ShaderPass } from "postprocessing";
 
+    import { perlin_texture } from "$lib/texture-generation";
     import {
         EffectComposer,
         EffectPass,
@@ -57,99 +58,30 @@
     let pixelSize = 6;
     let props = $props();
 
-    const generate_perlin_texture = (seed) => {
-        const width = 256;
-        const height = 256;
-
-        const data = new Uint8Array(width * height * 4);
-        const perlin = new ImprovedNoise();
-
-        let frequency = 1 / 64;
-        let amplitude = 1.0;
-        let persistence = 0.5;
-        let octaves = 8;
-        let z = seed / 100;
-
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                let noise = 0;
-                let freq = frequency;
-                let amp = amplitude;
-
-                for (let o = 0; o < octaves; o++) {
-                    noise += perlin.noise(x * freq, y * freq, z) * amp;
-                    freq *= 2;
-                    amp *= persistence;
-                }
-
-                noise = (noise + 1) / 2; // Normalize to [0,1]
-                let i = (y * width + x) * 4;
-                let color = noise * 255;
-
-                data[i] = props.color.r * 2 * noise;
-                data[i + 1] = props.color.g * noise;
-                data[i + 2] = props.color.b * noise;
-                data[i + 3] = 255;
-            }
-        }
-
-        const texture = new THREE.DataTexture(data, width, height);
-        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-        texture.magFilter = THREE.NearestFilter;
-        texture.minFilter = THREE.NearestFilter;
-        texture.needsUpdate = true;
-
-        return texture;
-    };
-
-    const generate_cloud_texture = () => {
-        const width = 256;
-        const height = 256;
-
-        const data = new Uint8Array(width * height * 4);
-        const perlin = new ImprovedNoise();
-
-        let frequency = 1 / 64;
-        let amplitude = 1.0;
-        let persistence = 0.5;
-        let octaves = 5;
-        let z = Math.random() * 100;
-
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                let noise = 0;
-                let freq = frequency;
-                let amp = amplitude;
-
-                for (let o = 0; o < octaves; o++) {
-                    noise += perlin.noise(x * freq, y * freq, z) * amp;
-                    freq *= 2;
-                    amp *= persistence;
-                }
-
-                noise = (noise + 1) / 2; // Normalize to [0,1]
-                let alpha = noise > 0.7 ? 255 : 0;
-                let i = (y * width + x) * 4;
-
-                data[i] = 255;
-                data[i + 1] = 255;
-                data[i + 2] = 255;
-                data[i + 3] = alpha;
-            }
-        }
-
-        const texture = new THREE.DataTexture(data, width, height);
-        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-        texture.magFilter = THREE.NearestFilter;
-        texture.minFilter = THREE.NearestFilter;
-        texture.needsUpdate = true;
-
-        return texture;
-    };
     let seed = $state(props.seed);
     console.log("seed in scene:" + seed);
-    noise_texture = generate_perlin_texture(seed);
-    cloud_texture = generate_cloud_texture();
+
+    noise_texture = perlin_texture(256, 256, seed, (noise) => {
+        const data = new Uint8Array(4);
+        data[0] = props.color.r * 2 * noise;
+        data[1] = props.color.g * noise;
+        data[2] = props.color.b * noise;
+        data[3] = 255;
+
+        return data;
+    });
+
+    cloud_texture = perlin_texture(256, 256, seed, (noise) => {
+        let alpha = noise > 0.7 ? 255 : 0;
+        const data = new Uint8Array(4);
+
+        data[0] = 255;
+        data[1] = 255;
+        data[2] = 255;
+        data[3] = alpha;
+
+        return data;
+    });
 
     $effect(() => {
         setup_effect_composer($camera, $size);
