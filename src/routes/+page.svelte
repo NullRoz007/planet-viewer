@@ -1,18 +1,26 @@
-<script lang="ts">
+<script>
+    import Menu from "~icons/pixelarticons/menu";
+    import Github from "~icons/pixelarticons/github";
+
     import { AppBar } from "@skeletonlabs/skeleton-svelte";
-    import PlanetViewer from "../components/PlanetViewer.svelte";
-    import RecentViewer from "../components/RecentViewer.svelte";
+    import QueryViewer from "../components/QueryViewer.svelte";
 </script>
 
 <header class="p-4">
     <AppBar classes="rounded-md">
         Exo Planet Viewer
-        {#snippet lead()}Menu{/snippet}
-        {#snippet trail()}github link{/snippet}
+        {#snippet lead()}<Menu />{/snippet}
+        {#snippet trail()}
+            <a href="https://github.com/NullRoz007/planet-viewer">
+                <Github />
+            </a>
+        {/snippet}
         {#snippet headline()}
-            AT2021ueyL / AT2021ueyL b / -19.06415 deg, 77.91374 deg
+            <span>
+                Nearest Neighbour: Proxima Cen / Proxima Cen b / -0.69 deg,
+                315.74 deg
+            </span>
         {/snippet}
     </AppBar>
 </header>
-
-<RecentViewer />
+<QueryViewer />

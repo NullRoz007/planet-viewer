@@ -4,12 +4,10 @@
 
     import * as THREE from "three";
     import { T, useTask, useThrelte } from "@threlte/core";
-
     import { interactivity } from "@threlte/extras";
-
-    import { ImprovedNoise } from "three/examples/jsm/math/ImprovedNoise.js";
     import { ShaderPass } from "postprocessing";
 
+    import { ImprovedNoise } from "three/examples/jsm/math/ImprovedNoise.js";
     import { perlin_texture } from "$lib/texture-generation";
     import {
         EffectComposer,
@@ -26,14 +24,15 @@
     const { scene, renderer, camera, size } = useThrelte();
     const composer = new EffectComposer(renderer);
 
+    let pixel_size = $state(5);
     const setup_effect_composer = (camera, size) => {
         composer.removeAllPasses();
 
-        const pixelEffect = new PixelationEffect(5);
+        const pixelEffect = new PixelationEffect(pixel_size);
         const bloomEffect = new BloomEffect({
             blendFunction: BlendFunction.ADD,
             kernelSize: KernelSize.LARGE,
-            intensity: 0.1,
+            intensity: 1,
             distinction: 1.0,
         });
 
@@ -93,8 +92,10 @@
 
     const { renderStage, autoRender } = useThrelte();
     onMount(() => {
-        let prev = autoRender.current;
+        let prev = autoRender.current; //disable auto render as we're using three's composer now
         autoRender.set(false);
+
+        if (props.mode == "fullscreen") pixel_size = 7;
         return () => autoRender.set(prev);
     });
 
@@ -103,7 +104,7 @@
     useTask(
         (delta) => {
             cloud_rotation += delta / 10;
-
+            rotation += delta / 20;
             composer.render(delta);
         },
         {
@@ -122,6 +123,7 @@
 />
 <T.DirectionalLight position={[0, 10, 10]} />
 <T.Mesh
+    rotation.y={rotation}
     position.y={1}
     scale={scale.current}
     onpointerenter={() => {
@@ -137,7 +139,7 @@
     <T.SphereGeometry />
     <T.MeshStandardMaterial
         map={noise_texture}
-        emissive={new THREE.Color("blue")}
+        emissive={new THREE.Color().setRGB(0.69, 0.82, 0.9)}
         emissiveIntensity={0.1}
     />
 </T.Mesh>
