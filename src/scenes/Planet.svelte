@@ -22,7 +22,7 @@
     } from "postprocessing";
 
     const { scene, renderer, camera, size } = useThrelte();
-    const composer = new EffectComposer(renderer);
+    let composer = new EffectComposer(renderer);
 
     let pixel_size = $state(5);
     const setup_effect_composer = (camera, size) => {

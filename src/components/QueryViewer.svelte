@@ -4,11 +4,12 @@
     import Reload from "~icons/pixelarticons/reload";
 
     const queries = [
-        { query: "/api/query/recent", inputs: 0, input_labels: [] },
-        { query: "/api/query/random", inputs: 0, input_labels: [] },
+        { query: "/api/query/recent?", input_labels: [], input_params: [] },
+        { query: "/api/query/random?", input_labels: [], input_params: [] },
         {
-            query: "/api/query/planet",
+            query: "/api/query/planet?",
             input_labels: ["Planet Name"],
+            input_params: ["pl_name"],
         },
     ];
 
@@ -16,12 +17,32 @@
     let query_promise = $state(null);
     let current_planet = $state(null);
     let query_enabled = $state(false);
+
+    const map_query_params = (query_object) => {
+        let parent = document.getElementById("input-container");
+        let param_map = {};
+        for (let i = 0; i < parent.children.length; i++) {
+            let child = parent.children[i];
+            let param_name = query_object.input_params[i];
+            let param_value = child.value;
+
+            param_map[param_name] = param_value;
+        }
+    };
+
     // runs a query and returns the result,
     // intended to be assigned to a stateful promise
-    const query = async (q) => {
+    const query = async (query_object) => {
         query_enabled = false;
-        let response = await fetch(q);
+        const q = query_object.query;
+
+        const param_map = map_query_params(query_object);
+        let response = await fetch(
+            q + new URLSearchParams(param_map).toString(),
+        );
+
         let planets = await response.json();
+
         query_enabled = true;
         return planets;
     };
@@ -30,7 +51,7 @@
     // as the promise is stateful, this refreshes page data
     const run_query = () => {
         if (selected_query !== undefined) {
-            query_promise = query(queries[selected_query].query);
+            query_promise = query(queries[selected_query]);
         }
     };
 
@@ -59,7 +80,7 @@
         current_planet = null;
     };
 
-    // Reactive statement to update recent_promise when selected_query changes
+    // Reactive statement to update query_promise when selected_query changes
     // this means updating selected_query triggers a new query and updates state
     $effect(() => {
         if (
@@ -90,7 +111,7 @@
             <Reload />
         </button>
     </div>
-    <div class="flex flex-col mx-4">
+    <div id="input-container" class="flex flex-col mx-4">
         {#each queries[selected_query].input_labels as label, i}
             <input type="text" class="input" placeholder={label} />
         {/each}
