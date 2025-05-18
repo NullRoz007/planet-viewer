@@ -6,11 +6,27 @@
 
 @source '../node_modules/@skeletonlabs/skeleton-svelte/dist';
 
+@import "@fontsource/fusion-pixel-10px-monospaced-sc";
+@import "@fontsource/fusion-pixel-12px-monospaced-sc";
+
 [data-theme="crimson"] {
-    --base-font-family: "Space Mono", serif;
-    --heading-font-family: "Space Mono", serif;
+    --base-font-family: "Fusion Pixel 10px Monospaced SC", serif;
+    --heading-font-family: "Fusion Pixel 12px Monospaced SC", serif;
     --anchor-font-family: "inherit";
+    --color-surface-100: var(--color-tertiary-50);
 }
+
+[data-theme="crimson"] select {
+    border-color: var(--color-surface-300);
+    padding: 10px;
+}
+
+[data-theme="crimson"][data-mode="light"] .exoheader {
+    border: 0.5px solid;
+    border-color: var(--color-surface-200);
+}
+
+@custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
 
 @layer utilities {
     .no-scrollbar::-webkit-scrollbar {

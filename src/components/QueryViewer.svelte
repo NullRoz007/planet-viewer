@@ -2,13 +2,27 @@
     import { onMount } from "svelte";
     import PlanetViewer from "./PlanetViewer.svelte";
     import Reload from "~icons/pixelarticons/reload";
+    import Play from "~icons/pixelarticons/play";
+    import Pause from "~icons/pixelarticons/pause";
 
     const queries = [
-        { query: "/api/query/recent", inputs: 0, input_labels: [] },
-        { query: "/api/query/random", inputs: 0, input_labels: [] },
         {
-            query: "/api/query/planet",
+            query: "/api/query/recent?",
+            input_labels: [],
+            input_params: [],
+            cache: true,
+        },
+        {
+            query: "/api/query/random?",
+            input_labels: [],
+            input_params: [],
+            cache: false,
+        },
+        {
+            query: "/api/query/planet?",
             input_labels: ["Planet Name"],
+            input_params: ["pl_name"],
+            cache: true,
         },
     ];
 
@@ -16,12 +30,38 @@
     let query_promise = $state(null);
     let current_planet = $state(null);
     let query_enabled = $state(false);
+
+    const map_query_params = (query_object) => {
+        let parent = document.getElementById("input-container");
+        let param_map = {};
+        param_map["use-cache"] = query_object.cache;
+
+        for (let i = 0; i < parent.children.length; i++) {
+            let child = parent.children[i];
+            let param_name = query_object.input_params[i];
+            let param_value = child.value;
+
+            param_map[param_name] = param_value;
+        }
+
+        return param_map;
+    };
+
     // runs a query and returns the result,
     // intended to be assigned to a stateful promise
-    const query = async (q) => {
+    const query = async (query_object) => {
         query_enabled = false;
-        let response = await fetch(q);
+        animated_header = -1;
+
+        const q = query_object.query;
+
+        const param_map = map_query_params(query_object);
+        let response = await fetch(
+            q + new URLSearchParams(param_map).toString(),
+        );
+
         let planets = await response.json();
+
         query_enabled = true;
         return planets;
     };
@@ -30,7 +70,7 @@
     // as the promise is stateful, this refreshes page data
     const run_query = () => {
         if (selected_query !== undefined) {
-            query_promise = query(queries[selected_query].query);
+            query_promise = query(queries[selected_query]);
         }
     };
 
@@ -46,7 +86,10 @@
         });
     };
     // open the planet viewer modal
-    const show_modal = (planet) => {
+    const show_modal = (e, planet) => {
+        const blocked_node_names = ["svg", "BUTTON", "path"]; //don't open if click triggered by a child clickable element
+        if (blocked_node_names.indexOf(e.srcElement.nodeName) != -1) return;
+
         current_planet = planet;
         const modal_elem = document.getElementById("world-modal");
         modal_elem.showModal();
@@ -59,7 +102,7 @@
         current_planet = null;
     };
 
-    // Reactive statement to update recent_promise when selected_query changes
+    // Reactive statement to update query_promise when selected_query changes
     // this means updating selected_query triggers a new query and updates state
     $effect(() => {
         if (
@@ -69,14 +112,15 @@
             run_query();
         }
     });
+
+    let animated_header = $state(-1);
 </script>
 
-<div class="w-full px-4">
-    <div class="flex {query_enabled ? 'enabled' : 'disabled'}">
-        <label class="label w-[29rem] pl-4 py-4">
-            <span class="label-text">Query</span>
+<div class="w-full">
+    <div class="flex {query_enabled ? 'enabled' : 'disabled'} pl-4">
+        <label class="label w-[28rem] py-4 hover">
             <select
-                class="select"
+                class="select text-sm"
                 id="query-select"
                 bind:value={selected_query}
             >
@@ -86,11 +130,14 @@
             </select>
         </label>
 
-        <button type="button" class="btn mt-5" onclick={run_query}>
+        <button type="button" class="btn" onclick={run_query}>
             <Reload />
         </button>
     </div>
-    <div class="flex flex-col mx-4">
+    <div
+        id="input-container"
+        class="flex flex-col mx-4 {query_enabled ? 'enabled' : 'disabled'}"
+    >
         {#each queries[selected_query].input_labels as label, i}
             <input type="text" class="input" placeholder={label} />
         {/each}
@@ -105,24 +152,56 @@
                 <a
                     href="#"
                     class="snap-start shrink-0 card preset-filled-surface-100-900 border-[1px] border-surface-200-800 card-hover divide-surface-200-800 block w-md max-w-md divide-y overflow-hidden"
-                    onclick={() => show_modal(planet)}
+                    onclick={(e) => show_modal(e, planet)}
                 >
-                    <header>
-                        <PlanetViewer
-                            pl_eqt={planet.pl_eqt}
-                            pl_name={planet.pl_name}
-                        />
+                    <header class="bg-black flex-col h-md">
+                        {#key animated_header}
+                            <PlanetViewer
+                                pl_eqt={planet.pl_eqt}
+                                pl_name={planet.pl_name}
+                                force_animated={animated_header == i}
+                                {planet}
+                            />
+                        {/key}
+                        <div class="w-full flex justify-end">
+                            <button
+                                type="button"
+                                class="btn relative left-3"
+                                onclick={() => {
+                                    if (animated_header != i) {
+                                        animated_header = i;
+                                    } else {
+                                        animated_header = -1;
+                                    }
+                                }}
+                            >
+                                {#if animated_header != i}
+                                    <Play color="white" />
+                                {:else}
+                                    <Pause color="white" />
+                                {/if}
+                            </button>
+                        </div>
                     </header>
                     <article class="space-y-4 p-4">
                         <div>
                             <h2 class="h6">{planet.hostname} /</h2>
-                            <h3 class="h3">{planet.pl_name}</h3>
+                            <div class="flex">
+                                <h3 class="h3">{planet.pl_name}</h3>
+                            </div>
                         </div>
-                        <p class="opacity-60">
-                            Radius: {planet.pl_rade ?? "N/A"} Earth radii<br />
-                            Mass: {planet.pl_bmasse ?? "N/A"} Earth masses<br />
-                            Orbital Period: {planet.pl_orbper ?? "N/A"} days
-                        </p>
+
+                        <div class="flex flex-col opacity-60">
+                            <span>
+                                Radius: {planet.pl_rade ?? "N/A"} Earth radii
+                            </span>
+                            <span>
+                                Mass: {planet.pl_bmasse ?? "N/A"} Earth masses
+                            </span>
+                            <span>
+                                Orbital Period: {planet.pl_orbper ?? "N/A"} days
+                            </span>
+                        </div>
                     </article>
                     <footer class="flex items-center justify-between gap-4 p-4">
                         <small class="opacity-60">
@@ -156,6 +235,7 @@
         <PlanetViewer
             pl_eqt={current_planet.pl_eqt}
             pl_name={current_planet.pl_name}
+            planet={current_planet}
             mode="fullscreen"
         />
 
